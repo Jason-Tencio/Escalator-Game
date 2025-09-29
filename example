@@ -1,16 +1,11 @@
 <?php
-require_once __DIR__ . "/mq_client.php";
-session_start();
-
-if (!empty($_SESSION['user_id']) && !empty($_SESSION['session_key'])) {
-    mq_rpc(['type' => 'logout', 'user_id' => (int)$_SESSION['user_id'], 'session_key' => $_SESSION['session_key']]);
+require_once __DIR__."/path.inc";
+require_once __DIR__."/get_host_info.inc";
+require_once __DIR__."/rabbitMQLib.inc";
+function mq_rpc(array $req): array {
+  $client = new rabbitMQClient(__DIR__."/testRabbitMQ.ini","testServer");
+  $resp = $client->send_request($req);
+  return is_array($resp)? $resp : ['status'=>'error','message'=>'Bad MQ response'];
 }
 
-$_SESSION = [];
-if (ini_get('session.use_cookies')) {
-    $p = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
-}
-session_destroy();
-header('Location: login.php'); exit;
-?>
+//client helper

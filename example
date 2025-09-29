@@ -1,20 +1,25 @@
 <?php
 require_once __DIR__ . "/mq_client.php";
+session_start();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = trim($_POST['username'] ?? '');
-    $e = trim($_POST['email'] ?? '');
     $p = $_POST['password'] ?? '';
 
-    if ($u === '' || $e === '' || $p === '') {
-        $error = "Please fill out all fields.";
+    if ($u === '' || $p === '') {
+        $error = "Please enter both username and password.";
     } else {
-        $res = mq_rpc(['type' => 'register', 'username' => $u, 'email' => $e, 'password' => $p]);
+        $res = mq_rpc(['type' => 'login', 'username' => $u, 'password' => $p]);
         if (($res['status'] ?? '') === 'ok') {
-            header('Location: login.php'); exit;
+            $_SESSION['user_id']     = (int) $res['user_id'];
+            $_SESSION['username']    = $res['username'];
+            $_SESSION['session_key'] = $res['session_key'];
+            header('Location: home.php'); exit;
+        } elseif (($res['status'] ?? '') === 'fail') {
+            $error = "Invalid username or password.";
         } else {
-            $error = $res['message'] ?? 'Registration failed.';
+            $error = "Login temporarily unavailable. Try again later.";
         }
     }
 }

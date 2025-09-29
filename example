@@ -1,26 +1,16 @@
 <?php
 require_once __DIR__ . "/mq_client.php";
 session_start();
-$error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $u = trim($_POST['username'] ?? '');
-    $p = $_POST['password'] ?? '';
-
-    if ($u === '' || $p === '') {
-        $error = "Please enter both username and password.";
-    } else {
-        $res = mq_rpc(['type' => 'login', 'username' => $u, 'password' => $p]);
-        if (($res['status'] ?? '') === 'ok') {
-            $_SESSION['user_id']     = (int) $res['user_id'];
-            $_SESSION['username']    = $res['username'];
-            $_SESSION['session_key'] = $res['session_key'];
-            header('Location: home.php'); exit;
-        } elseif (($res['status'] ?? '') === 'fail') {
-            $error = "Invalid username or password.";
-        } else {
-            $error = "Login temporarily unavailable. Try again later.";
-        }
-    }
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['session_key'])) {
+    mq_rpc(['type' => 'logout', 'user_id' => (int)$_SESSION['user_id'], 'session_key' => $_SESSION['session_key']]);
 }
+
+$_SESSION = [];
+if (ini_get('session.use_cookies')) {
+    $p = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+}
+session_destroy();
+header('Location: login.php'); exit;
 ?>
